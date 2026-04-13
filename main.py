@@ -1,29 +1,36 @@
 from core.data_handler import BISTDataHandler
-
-
-
+from core.backtest_engine import BacktestEngine
+from core.risk_manager import RiskManager
+from strategies.trend_following import TrendFollowingStrategy
 
 def main():
-    # İzlenecek hisseler listemiz
-    tickers = ["THYAO", "TUPRS", "KCHOL", "YEOTK", "ASTOR", "HEKTS", "BIMAS", "TCELL", "AKBNK", "YKBNK"]
+    print("Trade Bot Başlatılıyor...\n")
     
-    # Veri yöneticisini başlatıyoruz (2022'den bugüne örnek bir test)
-    handler = BISTDataHandler(
-        tickers=tickers, 
-        start_date="2022-01-01", 
-        end_date="2024-01-01"
-    )
-    
-    # 1. Aşama: Verileri internetten çek ve CSV olarak 'data' klasörüne kaydet
-    handler.fetch_and_save_data()
-    
-    # 2. Aşama: Çektiğimiz verilerden birini test amaçlı okuyalım
+    # 1. VERİ HAZIRLIĞI
+    # Daha önce veriyi indirdiğimiz için fetch_and_save_data() yapmamıza gerek yok.
+    data_handler = BISTDataHandler(tickers=["THYAO"], start_date="2010-01-01", end_date="2024-01-01")
     try:
-        print("\n[*] Test: THYAO verisi sistemden okunuyor...")
-        thyao_df = handler.load_data("THYAO")
-        print(thyao_df.head()) # İlk 5 satırı yazdır
-    except Exception as e:
-        print(f"Hata oluştu: {e}")
+        thyao_data = data_handler.load_data("THYAO")
+    except FileNotFoundError:
+        print("[!] Veri bulunamadı. Önce indiriliyor...")
+        data_handler.fetch_and_save_data()
+        thyao_data = data_handler.load_data("THYAO")
+    
+    # 2. RİSK YÖNETİCİSİ (%20 Drawdown, %5 Stop-Loss)
+    risk_manager = RiskManager(max_drawdown_limit=0.20, stop_loss_pct=0.05)
+    
+    # 3. STRATEJİ (Kısa=20, Uzun=50 Günlük Ortalama)
+    # Beynimizi oluştururken risk yöneticimizi de onun içine yerleştiriyoruz.
+    strategy = TrendFollowingStrategy(short_window=20, long_window=50, risk_manager=risk_manager)
+    
+    # 4. SİMÜLASYON MOTORU (100 TL Kasa, Binde 2 Komisyon)
+    engine = BacktestEngine(data=thyao_data, initial_balance=100.0, commission_rate=0.002)
+    
+    # 5. MOTORU ATEŞLE!
+    trade_history, portfolio_history = engine.run(strategy)
+    
+    # İşlem Özeti
+    print(f"\n📊 Toplam Yapılan İşlem Sayısı: {len(trade_history)}")
 
 if __name__ == "__main__":
     main()

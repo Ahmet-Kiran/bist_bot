@@ -26,6 +26,12 @@ class BISTDataHandler:
             if df.empty:
                 print(f"[!] UYARI: {ticker} için veri bulunamadı!")
                 continue
+            
+            # --- YENİ EKLENEN HATA ÇÖZÜMÜ ---
+            # yfinance'in yeni sürümüyle gelen çift başlık (MultiIndex) sorununu düzeltiyoruz.
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
+            # --------------------------------
                 
             # '.IS' takısını atıp temiz isimle kaydedelim (Örn: THYAO.csv)
             clean_ticker = ticker.replace('.IS', '')
