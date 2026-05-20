@@ -2,7 +2,7 @@ import pandas as pd
 
 class BacktestEngine:
     # Motora 'ticker' parametresi ekledik, böylece loglarda kimin işlemi olduğunu bileceğiz.
-    def __init__(self, data, ticker="HİSSE", initial_balance=100.0, commission_rate=0.002, slippage_rate=0.001):
+    def __init__(self, data, ticker="HİSSE", initial_balance=100.0, commission_rate=0.002, slippage_rate=0.001, verbose=True, inflation_handler=None):
         self.data = data
         self.ticker = ticker  # Hangi hissede olduğumuzu hafızaya aldık
         self.initial_balance = initial_balance
@@ -10,7 +10,10 @@ class BacktestEngine:
         self.position = 0               
         self.commission_rate = commission_rate
         self.slippage_rate = slippage_rate
-        
+        self.verbose = verbose
+
+        self.inflation_handler = inflation_handler
+
         self.trade_history = []         
         self.portfolio_values = []      
 
@@ -31,7 +34,25 @@ class BacktestEngine:
             self.trade_history.append({'date': date, 'action': 'BUY', 'price': execution_price, 'shares': shares_to_buy, 'commission': commission})
             
             # Ekrana basarken başına köşeli parantez ile HİSSE ADINI ekliyoruz
-            print(f"  [{self.ticker}] [+] ALIM  | Tarih: {date_str} | Fiyat: {execution_price:8.2f} TL  | Adet: {shares_to_buy:8.2f} | Kalan: {self.balance:8.2f} TL")
+            if self.verbose:  # EĞER ŞALTER AÇIKSA YAZDIR
+                enflasyon_bilgisi = ""
+                if self.inflation_handler and self.inflation_handler.cpi_data is not None:
+                    try:
+                        # Testin başladığı ilk tarihi ve o günkü TÜFE'yi bul
+                        ilk_tarih = pd.to_datetime(self.data.index[0]).to_period('M')
+                        ilk_tufe = self.inflation_handler.cpi_data.loc[ilk_tarih]
+                        
+                        # İşlem gününün TÜFE'sini bul
+                        islem_tarihi = pd.to_datetime(date_str).to_period('M')
+                        guncel_tufe = self.inflation_handler.cpi_data.loc[islem_tarihi]
+                        
+                        # Yüzdelik enflasyon hesabı
+                        enflasyon_orani = ((guncel_tufe / ilk_tufe) - 1.0) * 100
+                        enflasyon_bilgisi = f" | Enflasyon: %{enflasyon_orani:.1f}"
+                    except: pass
+                    
+                print(f"  [{self.ticker}] [+] ALIM  | Tarih: {date_str} | Fiyat: {execution_price:8.2f} TL (Kaymalı) | Adet: {shares_to_buy:8.2f} | Kalan: {self.balance:8.2f} TL{enflasyon_bilgisi}")
+            
 
         elif action == 'SELL' and self.position > 0:
             shares_to_sell = self.position * amount_ratio
@@ -44,7 +65,24 @@ class BacktestEngine:
             
             self.trade_history.append({'date': date, 'action': 'SELL', 'price': execution_price, 'shares': shares_to_sell, 'commission': commission})
             
-            print(f"  [{self.ticker}] [-] SATIM | Tarih: {date_str} | Fiyat: {execution_price:8.2f} TL  | Adet: {shares_to_sell:8.2f} | Kalan: {self.balance:8.2f} TL")
+            if self.verbose:  # EĞER ŞALTER AÇIKSA YAZDIR
+                enflasyon_bilgisi = ""
+                if self.inflation_handler and self.inflation_handler.cpi_data is not None:
+                    try:
+                        # Testin başladığı ilk tarihi ve o günkü TÜFE'yi bul
+                        ilk_tarih = pd.to_datetime(self.data.index[0]).to_period('M')
+                        ilk_tufe = self.inflation_handler.cpi_data.loc[ilk_tarih]
+                        
+                        # İşlem gününün TÜFE'sini bul
+                        islem_tarihi = pd.to_datetime(date_str).to_period('M')
+                        guncel_tufe = self.inflation_handler.cpi_data.loc[islem_tarihi]
+                        
+                        # Yüzdelik enflasyon hesabı
+                        enflasyon_orani = ((guncel_tufe / ilk_tufe) - 1.0) * 100
+                        enflasyon_bilgisi = f" | Enflasyon: %{enflasyon_orani:.1f}"
+                    except: pass
+                    
+                print(f"  [{self.ticker}] [-] SATIM | Tarih: {date_str} | Fiyat: {execution_price:8.2f} TL (Kaymalı) | Adet: {shares_to_sell:8.2f} | Kalan: {self.balance:8.2f} TL{enflasyon_bilgisi}")
 
     def run(self, strategy):
         strategy.prepare_indicators(self.data)

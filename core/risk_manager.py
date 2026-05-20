@@ -1,10 +1,10 @@
 class RiskManager:
-    def __init__(self, max_drawdown_limit=0.20, stop_loss_pct=0.05):
+    def __init__(self, max_drawdown_limit=0.30, stop_loss_pct=0.15):
         """
         Risk Yöneticisi sınıfı, portföyün aşırı erimesini (drawdown) ve tek bir pozisyondaki zararı sınırlamak için kurallar belirler.
         Parametreler:
         max_drawdown_limit: 0.20 (%20) -> Portföy toplam değeri tarihi zirvesinden %20 aşağı düşerse alarm ver.
-        stop_loss_pct: 0.05 (%5) -> Alınan bir hisse, alış fiyatından %5 aşağı düşerse zararı kes (Stop-Loss).
+        stop_loss_pct: 0.15 (%15) -> Alınan bir hisse, alış fiyatından %15 aşağı düşerse zararı kes (Stop-Loss).
         """
         self.max_drawdown_limit = max_drawdown_limit
         self.stop_loss_pct = stop_loss_pct

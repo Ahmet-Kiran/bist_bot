@@ -42,12 +42,17 @@ class TrendFollowingStrategy(BaseStrategy):
 
         prev_row = self.data.iloc[current_index - 1]
         
-        # --- ATR İLE AKILLI STOP-LOSS KONTROLÜ ---
+# --- ATR İLE İZLEYEN STOP-LOSS (TRAILING STOP) KONTROLÜ ---
         if self.position_open:
-            # Fiyat, ATR kalkanımızı aşağı kırarsa hemen sat!
+            # Fiyat yükseldikçe Stop çizgisini de yukarı çek (Kârı kilitle)
+            new_calculated_stop = current_row['Close'] - (current_row['ATR'] * 2)
+            if new_calculated_stop > self.dynamic_stop_loss:
+                self.dynamic_stop_loss = new_calculated_stop
+
+            # Fiyat, güncel stop kalkanımızı aşağı kırarsa kârı al ve kaç!
             if current_row['Close'] < self.dynamic_stop_loss:
                 self.position_open = False
-                return 'SELL', 1.0 # Acil Çıkış (%100 Sat)
+                return 'SELL', 1.0 # %100 Sat
 
         # --- ALIM ŞARTLARI ---
         # 1. Yön kesişimi yukarı mı?
