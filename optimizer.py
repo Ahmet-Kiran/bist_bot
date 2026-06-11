@@ -6,7 +6,7 @@ from core.risk_manager import RiskManager
 from strategies.trend_following import TrendFollowingStrategy
 
 def run_optimization():
-    print("🚀 BIST Algoritmik Optimizasyon (Grid Search) Başlatılıyor...\n")
+    print("🚀 BIST Algoritmik Optimizasyon Başlatılıyor...\n")
     
     # 1. Klasör Kontrolü (results klasörü yoksa oluştur)
     os.makedirs('results', exist_ok=True)

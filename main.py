@@ -3,6 +3,8 @@ from core.data_handler import BISTDataHandler
 from core.backtest_engine import BacktestEngine
 from core.risk_manager import RiskManager
 from strategies.trend_following import TrendFollowingStrategy
+from strategies.mean_reversion import MeanReversionStrategy
+from strategies.hybrid_strategy import HybridStrategy
 from core.visualizer import Visualizer
 from core.inflation_handler import InflationHandler
 
@@ -36,7 +38,9 @@ def main():
             print("-" * 80)
             
             risk_manager = RiskManager(max_drawdown_limit=0.20, stop_loss_pct=0.05)
-            strategy = TrendFollowingStrategy(short_window=20, long_window=50 ,risk_manager=risk_manager)
+                #strategy = TrendFollowingStrategy(short_window=20, long_window=50 ,risk_manager=risk_manager)
+                #strategy = MeanReversionStrategy(rsi_period=7, oversold_threshold=40, overbought_threshold=60, risk_manager=risk_manager)
+            strategy = HybridStrategy(rsi_period=14, oversold_threshold=40, trailing_stop_pct=0.08, risk_manager=risk_manager)
             
             # Motoru hisse ismi (ticker) ile başlatıyoruz
             engine = BacktestEngine(data=df, ticker=ticker, initial_balance=100.0, commission_rate=0.002, verbose=True, inflation_handler=inflation_handler_obj)
@@ -46,15 +50,29 @@ def main():
             print(f"[*] {ticker} grafiği hazırlanıyor...")
             Visualizer.plot_results(ticker, df, trade_history)
             nominal_kar_yuzde = ((final_value - 100.0) / 100.0) * 100
-            reel_kar_yuzde = (((1 + (nominal_kar_yuzde / 100.0)) / (1 + cum_inflation)) - 1.0) * 100
+            reel_kar_yuzde = (((1 + (nominal_kar_yuzde / 100.0)) / (1 + cum_inflation)) - 1.0) * 100 
             
+            ilk_fiyat = df.iloc[0]['Close']
+            son_fiyat = df.iloc[-1]['Close']
+            al_tut_bitis_tl = (100.0 / ilk_fiyat) * son_fiyat
+            
+            # Al-Tut'un Enflasyona Karşı Gerçek Kârı
+            al_tut_nominal_yuzde = ((al_tut_bitis_tl - 100.0) / 100.0) * 100
+            al_tut_reel_yuzde = (((1 + (al_tut_nominal_yuzde / 100.0)) / (1 + cum_inflation)) - 1.0) * 100 
+
+            # --- BOTUN MATEMATİĞİ ---
+            nominal_kar_yuzde = ((final_value - 100.0) / 100.0) * 100
+            reel_kar_yuzde = (((1 + (nominal_kar_yuzde / 100.0)) / (1 + cum_inflation)) - 1.0) * 100 
+            
+            # --- NİHAİ TABLOYA EKLEME ---
             results.append({
                 "Hisse": ticker,
-                "İşlem Sayısı": len(trade_history),
-                "Bitiş (TL)": round(final_value, 2),
-                "Enflasyon (%)": round(cum_inflation * 100, 2), # O dönemin toplam enflasyonu
-                "Nominal Kâr (%)": round(nominal_kar_yuzde, 2),
-                "Reel Kâr (%)": round(reel_kar_yuzde, 2)
+                "İşlem": len(trade_history),
+                "Bot Bitiş (TL)": round(final_value, 2),
+                "Al-Tut Bitiş (TL)": round(al_tut_bitis_tl, 2),
+                "Enflasyon (%)": round(cum_inflation * 100, 2),
+                "Reel Kâr (%)": round(reel_kar_yuzde, 2),          # Botun Gerçek Kârı
+                "Al-Tut Reel (%)": round(al_tut_reel_yuzde, 2)     # Hiç dokunmasaydık Gerçek Kârımız
             })
             
         except Exception as e:
