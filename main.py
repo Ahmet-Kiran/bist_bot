@@ -18,6 +18,7 @@ def main():
 
     print("🚀 BIST_Bot Başlatılıyor...\n")
     
+    
     tickers = ["THYAO", "TUPRS", "KCHOL", "PGSUS", "BIMAS","LOGO","HEKTS","TCELL","AKBNK","YKBNK"]
     start_date = "2015-01-01"
     end_date = "2024-01-01"
@@ -40,7 +41,7 @@ def main():
             risk_manager = RiskManager(max_drawdown_limit=0.20, stop_loss_pct=0.05)
                 #strategy = TrendFollowingStrategy(short_window=20, long_window=50 ,risk_manager=risk_manager)
                 #strategy = MeanReversionStrategy(rsi_period=7, oversold_threshold=40, overbought_threshold=60, risk_manager=risk_manager)
-            strategy = HybridStrategy(rsi_period=14, oversold_threshold=40, trailing_stop_pct=0.08, risk_manager=risk_manager)
+            strategy = HybridStrategy(rsi_period=14, oversold_threshold=55, overbought_threshold=95, trailing_stop_pct=0.10, ema_period=50, risk_manager=risk_manager)
             
             # Motoru hisse ismi (ticker) ile başlatıyoruz
             engine = BacktestEngine(data=df, ticker=ticker, initial_balance=100.0, commission_rate=0.002, verbose=True, inflation_handler=inflation_handler_obj)
@@ -79,6 +80,7 @@ def main():
             print(f"[!] {ticker} test edilirken hata oluştu: {e}")
 
     # Karnemizi basalım
+    print(f"\n\n[+] {strategy.__class__.__name__} stratejisi sonuçları...\n")
     print("\n\n🎯 --- ÇOKLU HİSSE TEST SONUÇLARI (2015 - 2024) ---")
     results_df = pd.DataFrame(results)
     results_df = results_df.sort_values(by= "Reel Kâr (%)" , ascending=False).reset_index(drop=True)
